@@ -1,0 +1,111 @@
+name: 'DeepL Translator for Vue i18n'
+description: 'Translates Vue i18n JSON files using DeepL API'
+inputs:
+  api-key:
+    description: 'DeepL API Key'
+    required: true
+  formality:
+    description: 'Translation formality (default, more, less, prefer_more, prefer_less)'
+    required: false
+    default: 'default'
+  root-dir:
+    description: 'Project root directory'
+    required: false
+    default: '.'
+  force-retranslate:
+    description: 'Force retranslation of strings that appear identical to source'
+    required: false
+    default: 'false'
+  config-path:
+    description: 'Custom path to the nuxt.config.ts/js file'
+    required: false
+  locales-dir:
+    description: 'Custom directory for locale files'
+    required: false
+  include-locale:
+    description: 'Only translate specified locales (comma-separated)'
+    required: false
+  override-default-locale:
+    description: 'Override the default locale (source language)'
+    required: false
+  output-dir:
+    description: 'Custom output directory for translated files'
+    required: false
+  debug:
+    description: 'Enable debug logging'
+    required: false
+    default: 'false'
+  dry-run:
+    description: 'Do not actually translate or save files'
+    required: false
+    default: 'false'
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r ${{ github.action_path }}/requirements.txt
+        # Install colorama for colored output
+        pip install colorama
+    
+    - name: Create .env file
+      shell: bash
+      run: |
+        echo "DEEPL_API_KEY=${{ inputs.api-key }}" > .env
+    
+    - name: Run DeepL translator
+      shell: bash
+      run: |
+        cd "${{ github.workspace }}"
+        CMD="python ${{ github.action_path }}/deepl_translator.py --root \"${{ inputs.root-dir }}\" --formality \"${{ inputs.formality }}\""
+        
+        # Add optional parameters
+        if [ "${{ inputs.force-retranslate }}" == "true" ]; then
+          CMD="$CMD --force-retranslate"
+        fi
+        
+        if [ "${{ inputs.debug }}" == "true" ]; then
+          CMD="$CMD --debug"
+        fi
+        
+        if [ "${{ inputs.dry-run }}" == "true" ]; then
+          CMD="$CMD --dry-run"
+        fi
+        
+        if [ -n "${{ inputs.config-path }}" ]; then
+          CMD="$CMD --config-path \"${{ inputs.config-path }}\""
+        fi
+        
+        if [ -n "${{ inputs.locales-dir }}" ]; then
+          CMD="$CMD --locales-dir \"${{ inputs.locales-dir }}\""
+        fi
+        
+        if [ -n "${{ inputs.output-dir }}" ]; then
+          CMD="$CMD --output-dir \"${{ inputs.output-dir }}\""
+        fi
+        
+        if [ -n "${{ inputs.override-default-locale }}" ]; then
+          CMD="$CMD --override-default-locale \"${{ inputs.override-default-locale }}\""
+        fi
+        
+        # Handle include-locale (comma-separated list)
+        if [ -n "${{ inputs.include-locale }}" ]; then
+          IFS=',' read -ra LOCALES <<< "${{ inputs.include-locale }}"
+          for locale in "${LOCALES[@]}"; do
+            CMD="$CMD --include-locale \"$locale\""
+          done
+        fi
+        
+        # Execute the command
+        echo "Executing: $CMD"
+        eval "$CMD"
+branding:
+  icon: 'globe'
+  color: 'blue' 

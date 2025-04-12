@@ -1,0 +1,36 @@
+name: Translate i18n files
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'i18n/locales/en.json'  # Only run when the source locale file changes
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Translate i18n files
+        uses: ./  # Replace with your-username/deepl-translator-vue-i18n@main
+        with:
+          api-key: ${{ secrets.DEEPL_API_KEY }}
+          formality: default
+          root-dir: .
+          # Uncomment any of these options as needed:
+          # locales-dir: i18n/locales
+          # include-locale: fr,de,es
+          # force-retranslate: true
+          # debug: true
+          # config-path: custom/nuxt.config.js
+          # output-dir: translated-locales
+          # override-default-locale: en
+          # dry-run: false
+          
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update translations
+          file_pattern: '**/*.json' 
