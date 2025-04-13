@@ -1,5 +1,5 @@
 name: 'DeepL Translator for Vue i18n'
-description: 'Translates Vue i18n JSON files using DeepL API'
+description: 'Translates Vue i18n JSON files using DeepL API by Mountain Web Studio'
 inputs:
   api-key:
     description: 'DeepL API Key'

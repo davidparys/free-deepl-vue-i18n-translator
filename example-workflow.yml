@@ -4,33 +4,66 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'i18n/locales/en.json'  # Only run when the source locale file changes
+      - 'locales/en.json'  # Only run when the source locale file changes
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
   translate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
       
       - name: Translate i18n files
-        uses: ./  # Replace with your-username/deepl-translator-vue-i18n@main
+        uses: mountainwebstudio/deepl-translator-vue-i18n@v1  # Replace with the correct username/repo@tag
         with:
           api-key: ${{ secrets.DEEPL_API_KEY }}
           formality: default
           root-dir: .
           # Uncomment any of these options as needed:
-          # locales-dir: i18n/locales
-          # include-locale: fr,de,es
-          # force-retranslate: true
-          # debug: true
+          # include-locale: fr,de,es  # Only translate these locales
+          # force-retranslate: true   # Force retranslation of identical strings
+          # debug: true               # Enable debug logging
           # config-path: custom/nuxt.config.js
           # output-dir: translated-locales
           # override-default-locale: en
           # dry-run: false
+      
+      # Option 1: Create a PR using the GitHub CLI
+      - name: Create Pull Request
+        run: |
+          # Create a new branch for the translations
+          git checkout -b update-translations-$(date +%Y%m%d-%H%M%S)
           
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: Update translations
-          file_pattern: '**/*.json' 
+          # Add and commit the changes
+          git config user.name "DeepL Translation Bot"
+          git config user.email "bot@example.com"
+          git add .
+          git commit -m "chore: update translations with DeepL"
+          
+          # Push the branch and create a PR
+          git push -u origin HEAD
+          gh pr create --title "Update translations with DeepL" \
+            --body "This PR contains automatically generated translations using DeepL API. Please review the translations before merging." \
+            --label "translations,automated"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      # Option 2: Alternative method using a dedicated action
+      # - name: Create Pull Request
+      #   uses: peter-evans/create-pull-request@v5
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     commit-message: "chore: update translations with DeepL"
+      #     branch: update-translations
+      #     delete-branch: true
+      #     title: "Update translations with DeepL"
+      #     body: |
+      #       This PR contains automatically generated translations using DeepL API.
+      #       Please review the translations before merging.
+      #     labels: |
+      #       translations
+      #       automated 
